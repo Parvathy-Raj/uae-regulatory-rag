@@ -1,0 +1,8 @@
+# CI release gate. A PR fails if a gated metric drops by more than max_drop
+# (absolute, 0-1 scale) versus eval/baseline.json, globally or in any category
+# with at least min_items items.
+mode: hybrid_rerank
+max_drop:
+  recall_at_5: 0.05
+  faithfulness: 0.05
+min_items: 3

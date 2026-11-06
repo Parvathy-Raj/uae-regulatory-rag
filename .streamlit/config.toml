@@ -1,0 +1,16 @@
+[theme]
+base = "light"
+primaryColor = "#95271D"
+backgroundColor = "#FCF8F5"
+secondaryBackgroundColor = "#F6EFEA"
+textColor = "#2A1714"
+font = "sans serif"
+
+[server]
+headless = true
+# The module watcher crawls transformers' lazy imports and logs torchvision errors;
+# restart the app after code edits instead.
+fileWatcherType = "none"
+
+[browser]
+gatherUsageStats = false

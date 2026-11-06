@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Secrets
+.env
+
+# Large / generated data (re-create with `make download ingest`)
+data/
+mlruns/
+mlruns.db
+mlartifacts/
+eval/runs/
+.hf_cache/
+
+# Local tooling and large media
+.claude/
+docs/demo.webm

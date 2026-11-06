@@ -1,0 +1,36 @@
+# Corpus definition. Swap or add sources here (e.g. ADGM/DIFC rules, port documents).
+# All URLs were checked to return a PDF on 2026-11-06. Publishers move files; if a
+# download fails, find the current link on the publisher's site and update it here.
+# Check each publisher's terms of use before redistributing anything. This repo only
+# stores the URLs; the PDFs are downloaded locally into data/raw/ and never committed.
+name: uae_fta_tax_guides
+publisher: UAE Federal Tax Authority (tax.gov.ae)
+sources:
+  - id: vat_taxable_person
+    title: "Taxable Person Guide for VAT (VATG001, June 2018, Issue 2)"
+    domain: vat
+    url: "https://tax.gov.ae/-/media/Files/EN/PDF/Guides/Taxable-Person-Guide-June-2018.pdf"
+  - id: vat_designated_zones
+    title: "Designated Zones VAT Guide"
+    domain: vat
+    url: "https://tax.gov.ae/DataFolder/Files/Pdf/Designated-Zones-VAT-Guide.pdf"
+  - id: vat_ecommerce
+    title: "E-Commerce VAT Guide (August 2020)"
+    domain: vat
+    url: "https://tax.gov.ae/DownloadOpenTextFile?fileUrl=en%2FVAT_VAT_Guides%2FE_Commerce%2FE_Commerce_VAT+Guide_EN_09_08_2020_EN.pdf"
+  - id: ct_general
+    title: "Corporate Tax General Guide (September 2023)"
+    domain: corporate_tax
+    url: "https://tax.gov.ae/DataFolder/Files/Guides/CT/CT%20General%20Guide%20-%20EN%20-%2010%2009%202023.pdf"
+  - id: ct_free_zone_persons
+    title: "Free Zone Persons Corporate Tax Guide (May 2024)"
+    domain: corporate_tax
+    url: "https://tax.gov.ae/Datafolder/Files/Guides/CT/Free%20Zone%20Persons%20-%2020%2005%202024%20final%20for%20GCD.pdf"
+  - id: ct_natural_persons
+    title: "Taxation of Natural Persons Corporate Tax Guide (November 2023)"
+    domain: corporate_tax
+    url: "https://tax.gov.ae/Datafolder/Files/Guides/CT/Taxation%20of%20natural%20persons%20-%2025%2011%202023.pdf"
+  - id: ct_returns
+    title: "Tax Returns Corporate Tax Guide (November 2024)"
+    domain: corporate_tax
+    url: "https://www.tax.gov.ae/Datafolder/Files/Guides/CT/CT-Returns-EN-11-11-2024.pdf"
