@@ -1,0 +1,111 @@
+name: eval-gate
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: eval-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu   # CPU-only torch
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+      - run: pip install -r requirements.txt && pip install -e . --no-deps
+      - run: ruff check src tests && ruff format --check src tests
+      - run: pytest
+
+  eval-gate:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+
+      - name: Check prerequisites
+        id: pre
+        run: |
+          ready=true; reason=""
+          if [ ! -s eval/golden_ci.jsonl ]; then ready=false; reason="eval/golden_ci.jsonl not committed yet (run make ci-subset)."; fi
+          if [ -z "$GROQ_API_KEY" ]; then ready=false; reason="GROQ_API_KEY secret is not available (not set, or PR from a fork)."; fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          echo "reason=$reason" >> "$GITHUB_OUTPUT"
+
+      - name: Install
+        if: steps.pre.outputs.ready == 'true'
+        run: pip install -r requirements.txt && pip install -e . --no-deps
+
+      - name: Cache Hugging Face models
+        if: steps.pre.outputs.ready == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ hashFiles('config/settings.yaml') }}
+
+      - name: Cache corpus and index
+        if: steps.pre.outputs.ready == 'true'
+        id: data-cache
+        uses: actions/cache@v4
+        with:
+          path: data
+          key: data-${{ hashFiles('corpus.yaml', 'config/settings.yaml', 'src/uae_rag/ingest/**') }}
+
+      - name: Download + ingest
+        if: steps.pre.outputs.ready == 'true' && steps.data-cache.outputs.cache-hit != 'true'
+        run: python -m uae_rag.cli download && python -m uae_rag.cli ingest
+
+      - name: Run eval subset
+        if: steps.pre.outputs.ready == 'true'
+        run: python -m uae_rag.cli eval --golden eval/golden_ci.jsonl --modes hybrid_rerank --tag ci --no-track
+
+      - name: Gate against baseline
+        if: steps.pre.outputs.ready == 'true'
+        id: gate
+        continue-on-error: true
+        run: |
+          RUN=$(ls -d eval/runs/*-ci | tail -1)
+          python -m uae_rag.cli gate "$RUN" --comment-out gate_comment.md
+
+      - name: Write skip comment
+        if: steps.pre.outputs.ready != 'true'
+        run: |
+          printf '<!-- uae-rag-eval-gate -->\n### Eval gate\n⏭️ Skipped: %s\n' "${{ steps.pre.outputs.reason }}" > gate_comment.md
+
+      - name: Upload run
+        if: steps.pre.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with: { name: eval-run, path: eval/runs/ }
+
+      - name: Post or update PR comment
+        if: github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('gate_comment.md', 'utf8');
+            const marker = '<!-- uae-rag-eval-gate -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const mine = comments.find(c => c.body && c.body.includes(marker));
+            if (mine) await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body });
+            else await github.rest.issues.createComment({ owner, repo, issue_number, body });
+
+      - name: Fail if gate failed
+        if: steps.gate.outcome == 'failure'
+        run: exit 1

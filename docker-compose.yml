@@ -1,0 +1,35 @@
+# `docker compose up` -> chat UI on http://localhost:8501
+# First time: `docker compose run --rm app python -m uae_rag.cli download` and `... ingest`.
+# Uses Groq by default (GROQ_API_KEY in .env). For fully offline use, start the
+# `ollama` profile and set UAE_RAG_LLM_PROVIDER=ollama in .env:
+#   docker compose --profile ollama up
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    env_file: [.env]
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434/v1
+    ports: ["8501:8501"]
+    volumes:
+      - ./data:/app/data
+      - ./eval:/app/eval
+      - hf_cache:/app/.hf_cache
+
+  ollama:
+    image: ollama/ollama:0.12.6
+    profiles: ["ollama"]
+    ports: ["11434:11434"]
+    volumes: [ollama:/root/.ollama]
+
+  ollama-pull:
+    image: ollama/ollama:0.12.6
+    profiles: ["ollama"]
+    depends_on: [ollama]
+    environment: { OLLAMA_HOST: "http://ollama:11434" }
+    entrypoint: ["ollama", "pull", "qwen2.5:3b-instruct"]
+
+volumes:
+  hf_cache:
+  ollama:

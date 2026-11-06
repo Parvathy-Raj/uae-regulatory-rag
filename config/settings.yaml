@@ -1,0 +1,59 @@
+# Main config. Environment variables (see .env.example) override the llm block.
+llm:
+  provider: groq                 # groq | ollama
+  model: openai/gpt-oss-20b      # generation model
+  judge_model: openai/gpt-oss-120b   # different, larger model for grading
+  temperature: 0.0
+  max_tokens: 2048
+  # gpt-oss is a reasoning model: hidden reasoning shares max_tokens with the answer.
+  # "low" keeps it short so JSON output isn't cut off. Set "" for non-reasoning models (Ollama).
+  reasoning_effort: low
+  timeout_s: 120
+  max_retries: 3
+  requests_per_minute: 25        # stay under Groq free-tier limits
+  providers:
+    groq:
+      base_url: https://api.groq.com/openai/v1
+      api_key_env: GROQ_API_KEY
+    ollama:                      # offline option; e.g. model: qwen2.5:3b-instruct
+      base_url: http://localhost:11434/v1
+      api_key_env: ""
+
+embedding:
+  model: BAAI/bge-small-en-v1.5
+  query_instruction: "Represent this sentence for searching relevant passages: "
+  batch_size: 32
+
+reranker:
+  model: BAAI/bge-reranker-base
+
+chunking:
+  max_words: 300
+  overlap_words: 50
+  min_words: 40          # sections shorter than this are merged into the next one
+
+retrieval:
+  mode: hybrid_rerank    # dense | hybrid | hybrid_rerank
+  top_k: 5
+  candidate_k: 30        # first-stage pool for RRF and the reranker
+  rrf_k: 60
+
+generation:
+  # Refuse without calling the LLM when the best retrieved score is below these.
+  # Starting values only; tune them on a dev split, never on the test set.
+  min_rerank_score: 0.02
+  min_dense_score: 0.0
+  refuse_if_no_valid_citation: true
+
+paths:
+  corpus_file: corpus.yaml
+  raw_dir: data/raw
+  parsed_dir: data/parsed
+  chunks_file: data/chunks.jsonl
+  chroma_dir: data/chroma
+  collection: fta_corpus
+  golden_file: eval/golden.jsonl
+  golden_ci_file: eval/golden_ci.jsonl
+  baseline_file: eval/baseline.json
+  runs_dir: eval/runs
+  mlflow_uri: sqlite:///mlruns.db
