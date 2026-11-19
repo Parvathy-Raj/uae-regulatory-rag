@@ -10,6 +10,8 @@
 
 ## Architecture
 
+> Design trade-offs, what failed and what I'd change: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Full decision log: [docs/decisions.md](docs/decisions.md).
+
 ```mermaid
 flowchart LR
     subgraph Ingest
